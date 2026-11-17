@@ -1,0 +1,117 @@
+/* ============================================
+   i18n — English + Indonesia (others fallback to EN)
+   ============================================ */
+const LANGS = {
+  en: {
+    header_subtitle: "Web Helper to assist fishermen in catching fish and preserving the sea",
+    nav_home: "Home", nav_map: "Map", nav_weather: "Weather", nav_info: "Fish Info", nav_about: "About", nav_theme: "🌓 Theme",
+    search_placeholder: "Search location (e.g. Jakarta)",
+    btn_search: "Search", btn_home: "Home",
+    generate: "Generate Zones", load_kkp: "Load KKP Zones", load_geo: "Load GeoJSON",
+    export_fav: "Export Favorites", clear_reports: "Clear Reports",
+    toggle_random: "Toggle Random", regen: "Regenerate", btn_all_feature: "All Features",
+    random_on: "⏱ Random ON", random_off: "⏱ Random OFF",
+    map_zone_filters: "Zone Filters",
+    map_green_safe: "Green — Safe", map_yellow_caution: "Yellow — Caution", map_red_restricted: "Red — Restricted",
+    map_quick_tips: "Quick Tips",
+    map_tip_report: "Press <strong>R</strong> to enter report mode, then click a location to add a catch report.",
+    map_tip_forecast: "Click any zone to view simulated marine forecast.",
+    map_forecast_title: "Marine Forecast & Safety",
+    forecast_wave: "Wave Height:", forecast_wind: "Wind Speed:", forecast_temp: "Water Temp:", forecast_visibility: "Visibility:",
+    forecast_safe: "Safe Conditions",
+    safety_click: "Click a zone or map point...",
+    map_refresh_forecast: "Refresh Forecast", map_auto_update: "Auto updates",
+    map_legend: "Legend",
+    info_title: "Fish Info", info_saltwater_title: "Saltwater Fish", info_freshwater_title: "Freshwater Fish",
+    info_th_name: "Name", info_th_desc: "Description", info_th_price: "Price",
+    info_th_locations: "Common Locations", info_th_habitat: "Habitat", info_th_season: "Best Season",
+    weather_title: "Marine Weather Forecast",
+    weather_forecast_title: "5-Day Forecast",
+    weather_marine_title: "Marine Conditions",
+    footer_marine_title: "Marine Info", footer_report_illegal: "Report illegal fishing:",
+    footer_feedback_title: "Feedback", footer_phone_placeholder: "Phone number (required)", footer_message_placeholder: "Message",
+    footer_send: "Send", footer_save_local: "Save Local",
+    footer_manage_title: "Manage", footer_export_data: "Export Data", footer_import_data: "Import Data",
+    footer_hide: "Hide Footer", footer_show: "Show Footer", footer_comfort: "Theme & language set for user comfort.",
+    alert_feedback_saved: "Feedback saved locally.",
+    alert_phone_required: "Phone number is required.",
+    alert_not_found: "Location not found.",
+    alert_search_failed: "Search failed.",
+    alert_report_mode_on: "Report mode ON — click map to add catch report.",
+    alert_report_saved: "Report saved.",
+    alert_canceled: "Canceled.",
+    prompt_species: "Species caught:",
+    prompt_weight: "Weight (kg, optional):",
+    alert_cleared: "Cleared.",
+    confirm_clear: "Clear all local reports?",
+    alert_sos_sent: "SOS sent via WhatsApp.",
+    alert_gps_started: "GPS tracking active.",
+    alert_gps_error: "GPS error: ",
+    alert_imported: "Data imported.",
+    alert_exported: "Data exported.",
+    alert_kkp_loaded: "KKP zones loaded.",
+    alert_kkp_failed: "KKP zones not available (using simulated zones)."
+  },
+  id: {
+    header_subtitle: "Web Helper untuk membantu nelayan dalam menangkap ikan serta melestarikan laut",
+    nav_home: "Beranda", nav_map: "Peta", nav_weather: "Cuaca", nav_info: "Info Ikan", nav_about: "Tentang", nav_theme: "🌓 Tema",
+    search_placeholder: "Cari lokasi (mis. Jakarta)",
+    btn_search: "Cari", btn_home: "Beranda",
+    generate: "Buat Zona", load_kkp: "Muat Zona KKP", load_geo: "Muat GeoJSON",
+    export_fav: "Ekspor Favorit", clear_reports: "Bersihkan Laporan",
+    toggle_random: "Acak Aktif/Mati", regen: "Buat Ulang", btn_all_feature: "Semua Fitur",
+    random_on: "⏱ Acak AKTIF", random_off: "⏱ Acak MATI",
+    map_zone_filters: "Filter Zona",
+    map_green_safe: "Hijau — Aman", map_yellow_caution: "Kuning — Hati-hati", map_red_restricted: "Merah — Terlarang",
+    map_quick_tips: "Tips Cepat",
+    map_tip_report: "Tekan <strong>R</strong> untuk mode laporan, lalu klik lokasi untuk menambah laporan.",
+    map_tip_forecast: "Klik zona untuk melihat perkiraan cuaca laut.",
+    map_forecast_title: "Perkiraan Laut & Keselamatan",
+    forecast_wave: "Tinggi Gelombang:", forecast_wind: "Kecepatan Angin:", forecast_temp: "Suhu Air:", forecast_visibility: "Jarak Pandang:",
+    forecast_safe: "Kondisi Aman",
+    safety_click: "Klik zona atau titik peta...",
+    map_refresh_forecast: "Segarkan", map_auto_update: "Auto update",
+    map_legend: "Legenda",
+    info_title: "Info Ikan", info_saltwater_title: "Ikan Air Asin", info_freshwater_title: "Ikan Air Tawar",
+    info_th_name: "Nama", info_th_desc: "Deskripsi", info_th_price: "Harga",
+    info_th_locations: "Lokasi Umum", info_th_habitat: "Habitat", info_th_season: "Musim Terbaik",
+    weather_title: "Perkiraan Cuaca Maritim",
+    weather_forecast_title: "Perkiraan 5 Hari",
+    weather_marine_title: "Kondisi Maritim",
+    footer_marine_title: "Info Kelautan", footer_report_illegal: "Laporkan penangkapan ilegal:",
+    footer_feedback_title: "Umpan Balik", footer_phone_placeholder: "Nomor telepon (wajib)", footer_message_placeholder: "Pesan",
+    footer_send: "Kirim", footer_save_local: "Simpan Lokal",
+    footer_manage_title: "Kelola", footer_export_data: "Ekspor Data", footer_import_data: "Impor Data",
+    footer_hide: "Sembunyikan Footer", footer_show: "Tampilkan Footer", footer_comfort: "Tema & bahasa untuk kenyamanan.",
+    alert_feedback_saved: "Umpan balik tersimpan.",
+    alert_phone_required: "Nomor telepon wajib diisi.",
+    alert_not_found: "Lokasi tidak ditemukan.",
+    alert_search_failed: "Pencarian gagal.",
+    alert_report_mode_on: "Mode laporan AKTIF — klik peta untuk menambah laporan.",
+    alert_report_saved: "Laporan tersimpan.",
+    alert_canceled: "Dibatalkan.",
+    prompt_species: "Spesies yang ditangkap:",
+    prompt_weight: "Berat (kg, opsional):",
+    alert_cleared: "Dibersihkan.",
+    confirm_clear: "Bersihkan semua laporan lokal?",
+    alert_sos_sent: "SOS terkirim via WhatsApp.",
+    alert_gps_started: "GPS tracking aktif.",
+    alert_gps_error: "GPS error: ",
+    alert_imported: "Data berhasil diimpor.",
+    alert_exported: "Data berhasil diekspor.",
+    alert_kkp_loaded: "Zona KKP dimuat.",
+    alert_kkp_failed: "Zona KKP tidak tersedia (pakai zona simulasi)."
+  }
+};
+
+function t(key) {
+  return (LANGS[lang] && LANGS[lang][key]) || LANGS.en[key] || key;
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => el.innerHTML = t(el.getAttribute('data-i18n')));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.getAttribute('data-i18n-placeholder')));
+  document.querySelectorAll('[data-i18n-title]').forEach(el => el.title = t(el.getAttribute('data-i18n-title')));
+  const tr = document.getElementById('toggle-random');
+  if (tr) tr.textContent = randomizeOn ? t('random_on') : t('random_off');
+}
