@@ -6,8 +6,8 @@ if (workbox) {
   workbox.core.skipWaiting();
   workbox.core.clientsClaim();
 
-  const CACHE_VERSION = 'gisfishit-v4-3';
-  workbox.core.setCacheNameDetails({ prefix: 'gisfishit', suffix: 'v4-3' });
+  const CACHE_VERSION = 'gisfishit-v4-4';
+  workbox.core.setCacheNameDetails({ prefix: 'gisfishit', suffix: 'v4-4' });
 
   // FIX #9: Relative ./ paths so GH Pages subfolders and root both resolve cleanly
   workbox.precaching.precacheAndRoute([
@@ -37,7 +37,7 @@ if (workbox) {
       caches.keys().then((keys) =>
         Promise.all(
           keys
-            .filter((k) => !k.includes('v4-3') && !k.includes('weather-api-v4') && !k.includes('bmkg-api-v4') && !k.includes('ndbc-api-v4') && !k.includes('tide-api-v4'))
+            .filter((k) => !k.includes('v4-4') && !k.includes('weather-api-v4') && !k.includes('bmkg-api-v4') && !k.includes('ndbc-api-v4') && !k.includes('tide-api-v4'))
             .map((k) => caches.delete(k))
         )
       )
