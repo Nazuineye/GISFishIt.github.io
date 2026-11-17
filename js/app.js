@@ -106,4 +106,67 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (!data.length) { showToast(t('alert_not_found'), 'warning'); return; }
       renderWeatherTab(parseFloat(data[0].lat), parseFloat(data[0].lon), q);
-    } catch { showToast(t('alert
+    } catch { showToast(t('alert_search_failed'), 'error'); }
+  });
+
+  // Auto refresh weather every 10 min
+  setInterval(() => {
+    if (document.getElementById('weatherSection').style.display !== 'none') renderWeatherTab();
+  }, 600000);
+});
+
+function populateFishTables() {
+  const salt = document.querySelector('#fish-table-saltwater tbody');
+  const fresh = document.querySelector('#fish-table-freshwater tbody');
+  if (!salt || !fresh) return;
+  salt.innerHTML = ''; fresh.innerHTML = '';
+  FISH_DATA.forEach(f => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${f.name}</td><td>${f.desc}</td><td>${f.price}</td><td>${f.locations}</td><td>${f.habitat}</td><td>${f.season}</td>`;
+    (f.type === 'saltwater' ? salt : fresh).appendChild(tr);
+  });
+}
+
+function initFooter() {
+  const footer = document.querySelector('footer');
+  const showBtn = document.getElementById('show-footer');
+  document.getElementById('hide-footer').addEventListener('click', () => footer.classList.add('hidden'));
+  showBtn.addEventListener('click', () => footer.classList.remove('hidden'));
+  // Sembunyikan tombol show saat footer tampil
+  const checkFooter = () => { showBtn.style.display = footer.classList.contains('hidden') ? 'block' : 'none'; };
+  setInterval(checkFooter, 300);
+  checkFooter();
+}
+
+function initFeedback() {
+  document.getElementById('feedback-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveFeedback();
+  });
+  document.getElementById('save-local').addEventListener('click', saveFeedback);
+}
+
+function saveFeedback() {
+  const phone = document.getElementById('fb-phone').value.trim();
+  const message = document.getElementById('fb-message').value.trim();
+  if (!phone) { showToast(t('alert_phone_required'), 'error'); return; }
+  const list = JSON.parse(localStorage.getItem('gisfishit_feedback') || '[]');
+  list.push({ phone, message, ts: Date.now() });
+  localStorage.setItem('gisfishit_feedback', JSON.stringify(list));
+  document.getElementById('fb-status').textContent = t('alert_feedback_saved');
+  document.getElementById('fb-phone').value = '';
+  document.getElementById('fb-message').value = '';
+  showToast(t('alert_feedback_saved'), 'success');
+}
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
