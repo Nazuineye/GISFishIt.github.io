@@ -1,0 +1,174 @@
+/* GISFishIt v3 — CSS-only Animation System */
+@media (prefers-reduced-motion: no-preference) {
+  /* 1. Hero stagger fade-up & logo spring */
+  .hero-stagger {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: heroFadeUp var(--dur-hero) var(--ease-out) forwards;
+  }
+  .hero-stagger-1 { animation-delay: 0ms; }
+  .hero-stagger-2 { animation-delay: 100ms; }
+  .hero-stagger-3 { animation-delay: 200ms; }
+  .hero-stagger-4 { animation-delay: 300ms; }
+  .brand-logo { animation: logoSpring 600ms var(--ease-spring) both; }
+
+  @keyframes heroFadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes logoSpring {
+    from { opacity: 0; transform: scale(0.75); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* 2. Scroll reveal */
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  }
+  .reveal-on-scroll.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* 3. Card hover lift + icon rotate */
+  .hover-card {
+    transition: transform var(--dur-med) var(--ease-out), box-shadow var(--dur-med) var(--ease-out);
+  }
+  .hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--elev-2);
+  }
+  .hover-card svg.card-icon {
+    transition: transform var(--dur-med) var(--ease-spring);
+  }
+  .hover-card:hover svg.card-icon {
+    transform: rotate(-8deg) scale(1.1);
+  }
+
+  /* 5. SOS double pulse ring + hover + shake */
+  #btn-sos::before,
+  #btn-sos::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid var(--coral);
+    pointer-events: none;
+    animation: sosRing 2.5s var(--ease-out) infinite;
+  }
+  #btn-sos::after { animation-delay: 1.25s; }
+  #btn-sos:hover { transform: scale(1.06); }
+  #btn-sos.sos-clicked { animation: errorShake 400ms var(--ease-snappy); }
+  @media (max-width: 768px) {
+    #btn-sos:hover { transform: translateX(-50%) scale(1.06); }
+  }
+
+  @keyframes sosRing {
+    0% { transform: scale(1); opacity: 0.65; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  /* 6. Skeleton shimmer */
+  .skeleton {
+    animation: shimmer 1.4s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* 8. Toast slide-spring */
+  .toast {
+    animation: toastIn 380ms var(--ease-spring) both;
+  }
+  .toast.fade-out {
+    animation: toastOut 260ms var(--ease-snappy) forwards;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(400px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateX(400px); }
+  }
+
+  /* 9 & 10. Map zone pulse (danger) & bob (safe) */
+  .zone-pulse-danger {
+    animation: dangerPulse 2s ease-out infinite;
+  }
+  @keyframes dangerPulse {
+    0% { box-shadow: 0 0 0 0 rgba(232, 106, 95, 0.7); }
+    100% { box-shadow: 0 0 0 16px rgba(232, 106, 95, 0); }
+  }
+  .zone-bob-safe {
+    animation: safeBob 3s ease-in-out infinite;
+  }
+  @keyframes safeBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  /* 12. Hero image Ken Burns */
+  .ken-burns {
+    animation: kenBurns 8s ease-in-out infinite alternate;
+  }
+  @keyframes kenBurns {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+
+  /* 13. Section crossfade */
+  .page-section.active {
+    animation: sectionCrossfade var(--dur-med) var(--ease-out);
+  }
+  @keyframes sectionCrossfade {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 14 & 20. Error shake */
+  .shake {
+    animation: errorShake 400ms var(--ease-snappy);
+  }
+  @keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+
+  /* 16. Animated Weather SVGs */
+  .svg-sun-spin { transform-origin: center; animation: sunRotate 60s linear infinite; }
+  .svg-cloud-drift { animation: cloudDrift 30s ease-in-out infinite alternate; }
+  .svg-wave-bounce { animation: waveBounce 4s ease-in-out infinite; }
+  @keyframes sunRotate { to { transform: rotate(360deg); } }
+  @keyframes cloudDrift { from { transform: translateX(-3px); } to { transform: translateX(3px); } }
+  @keyframes waveBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+
+  /* 17. Top progress bar */
+  #top-progress-bar.active {
+    opacity: 1;
+    transition: transform 400ms var(--ease-out);
+  }
+
+  /* 19. Empty state fish bob */
+  .empty-fish-bob { animation: safeBob 3s ease-in-out infinite; }
+
+  /* Offline bar slide down */
+  .offline-bar.visible { animation: slideDown 250ms var(--ease-out); }
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 100ms !important;
+    scroll-behavior: auto !important;
+  }
+}

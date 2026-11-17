@@ -1,0 +1,26 @@
+/* GISFishIt v3 — Print Stylesheet */
+@media print {
+  nav.top,
+  .mobile-bottom-nav,
+  .offline-bar,
+  #btn-sos,
+  #show-footer,
+  #back-to-top,
+  footer.site-footer,
+  .header-controls,
+  #toast-container,
+  #confetti-canvas {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding-bottom: 0 !important;
+  }
+  body::after { display: none !important; }
+  .surface-card, .fish-card, .profile-card {
+    box-shadow: none !important;
+    border: 1px solid #cccccc !important;
+    break-inside: avoid;
+  }
+}

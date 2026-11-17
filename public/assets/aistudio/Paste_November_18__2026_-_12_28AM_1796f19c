@@ -1,0 +1,742 @@
+# 🔍 Audit Lengkap GISFishIt v2 + Prompt Regenerasi
+
+Sebelum prompt, ini **temuan audit** saya — supaya Anda tahu apa yang akan di-fix oleh AI:
+
+---
+
+## 📊 RINGKASAN AUDIT
+
+### 🐛 Bug Kritis (28 yang teridentifikasi)
+
+| # | Bug | Dampak | Fix |
+|---|---|---|---|
+| 1 | `EMERGENCY_PHONE` hardcoded tanpa UI untuk ganti | User tidak bisa set kontak darurat sendiri | Settings modal |
+| 2 | `toggleRandom` di-bind **dua kali** (`btn-random-toggle` + `toggle-random`) | Klik 1× = toggle 2×, bentrok | Bind sekali saja |
+| 3 | `initMap()` panggil `initSupabase()` sebelum app.js load | Race condition | Semua modul pakai `window.*` global |
+| 4 | `bindMapControls()` coba bind `btn-reset-fish-positions` — **tidak ada di map.js** | Tombol "Reset Positions" di HTML tidak berfungsi | Tambah handler |
+| 5 | `applyZoneFilters()` pakai `zoneCluster.clearLayers()` → **hilang cluster state** | Marker jumping tiap filter | Pakai `LayerGroup` + `addLayer/removeLayer` |
+| 6 | Klik marker memicu `map.on('click')` juga | Report mode terbuka saat klik zona | `L.DomEvent.stopPropagation` di marker |
+| 7 | `exportFavorites` export **semua zone**, bukan favorit | Fitur tidak bermakna | Tambah "★ Add to Favorites" per marker |
+| 8 | `clearReports` hapus localStorage `gisfishit_favorites` yang **tidak pernah dipakai** | Dead code | Implement favorite atau hapus |
+| 9 | `sw.js` precache `url: 'index.html'` — **404 di GH Pages subfolder** | Offline tidak aktif | Pakai relative `./index.html` |
+| 10 | Weather auto-refresh jalan saat tab hidden | Battery drain 2GB phone | `document.visibilityState` check |
+| 11 | Chart.js destroy error kehilangan instance | Weather tab crash setelah error | Try-catch + null check |
+| 12 | `saveCatch` pakai `.add()` bukan `.put()` | Duplikat ID silent fail | Pakai `.put()` |
+| 13 | Nominatim tanpa debounce & cache | Rate-limit kena blokir | Debounce 500ms + localStorage cache |
+| 14 | `marker.getElement()` null saat spawn awal | Fish movement error | Wait untuk `on('add')` |
+| 15 | SOS tanpa konfirmasi | Accidental trigger = drama | Countdown 3 detik + cancel |
+| 16 | SOS tanpa fallback jika WA tidak ada | User stuck | Detect + fallback ke SMS/telepon |
+| 17 | Toast di-trigger sebelum `showToast` didefinisikan | `showToast is not defined` di awal | Definisikan di `app.js` **paling atas**, atau inline di `<head>` |
+| 18 | `applyI18n()` dipanggil sebelum DOM ready di beberapa jalur | Label tidak update | Wrap dalam DOMContentLoaded |
+| 19 | `lastWeatherData` tidak punya timestamp validasi | Data 3 jam lalu tampil sebagai current | Cek `fetchedAt` < 1 jam |
+| 20 | `#map-section-card` id dipakai CSS tapi tidak ada di HTML | Style tidak apply | Hapus CSS atau tambah id |
+| 21 | Import data JSON merge tapi tidak validasi | Malformed JSON crash | `try-catch` + schema check |
+| 22 | Language selector tidak persist | Reload reset ke EN | `localStorage.setItem('lang', ...)` |
+| 23 | Theme selector tidak persist | Reload reset ke light | `localStorage.setItem('theme', ...)` |
+| 24 | Breadcrumb Layer **tidak punya clear button** | Menumpuk selamanya di IndexedDB | Tombol "Clear Track" |
+| 25 | `assessSafety` threshold hardcoded | Tidak fleksibel | Konstanta di config.js |
+| 26 | SOS `window.open` diblokir popup blocker | WhatsApp tidak terbuka | Pakai `<a href>` yang di-click programatik |
+| 27 | Footer `saveFeedback` tidak cek duplikat | Spam → localStorage penuh | Dedupe + limit 50 entri |
+| 28 | `map.invalidateSize()` hanya dipanggil untuk `mapSection` | Map render salah saat resize | `ResizeObserver` |
+
+### 🕳️ Fitur Kosong / Setengah Jadi (16)
+
+| # | Fitur | Status | Yang perlu |
+|---|---|---|---|
+| 1 | **Reset Fish Positions** | Tombol ada, handler tidak ada | Bind + implement |
+| 2 | **Export Favorites** | Tombol ada, tidak ada cara add favorit | Fitur "★" per marker |
+| 3 | **Import GeoJSON** | Hilang dari v2 | Kembalikan dengan file input |
+| 4 | **Tide & Moon Phase** | Tampil `—` terus | WorldTides API atau NOAA |
+| 5 | **Catch Log Viewer** | Hanya export, tidak bisa lihat | Modal timeline |
+| 6 | **Breadcrumb Viewer** | Hanya simpan, tidak bisa lihat | Modal peta jejak |
+| 7 | **Multi-bahasa** | Hanya EN/ID (v1 punya 6) | Kembalikan 6 bahasa |
+| 8 | **Fish Images** | Tidak ada gambar | SVG ilustrasi atau Wikimedia |
+| 9 | **Search autocomplete** | Tidak ada saran | Nominatim autocomplete dropdown |
+| 10 | **Weather widget di Home** | Kosong | Mini current weather |
+| 11 | **Sunrise/sunset** | Tidak ada | Open-Meteo daily |
+| 12 | **Route planning** | Hanya roadmap | Leaflet Routing Machine atau garis lurus + bearing |
+| 13 | **Distance calculator** | Tidak ada | Haversine dari posisi user |
+| 14 | **Notifications** | Tidak ada | Web Push + service worker |
+| 15 | **Favorites persistence** | Hilang | localStorage + map marker |
+| 16 | **Emergency contacts** | 1 nomor hardcoded | Settings multi-kontak |
+
+### 🗑️ Yang Harus Dihapus
+
+| # | Item | Alasan |
+|---|---|---|
+| 1 | `#map-section-card` CSS rule | ID tidak ada di HTML |
+| 2 | Duplicate `.legend` CSS block | Ada 2 blok identik |
+| 3 | `randomizeInterval` — auto-regen tiap 30 detik | Bikin peta "loncat-loncat" → bukan simulasi, tapi bug feel |
+| 4 | Emoji berlebihan sebagai ikon produk | Label "AI-generated" |
+| 5 | 6 bahasa kosong (fr/jp/es/ar tanpa terjemahan) | Setengah jadi → lebih baik 2 bahasa lengkap |
+| 6 | `.moving-fish-marker` (pulse 2s infinite) | Bikin mata lelah |
+| 7 | Chart.js 24 dataset — terlalu ramai | Kurangi jadi 2 dataset |
+| 8 | `generateForecast()` lama (random) | Sudah diganti real API |
+| 9 | `checkWeatherAlerts()` lama | Redundan, ada di safety assess |
+| 10 | Semua `console.warn` di production | Pakai logger yang bisa dimatikan |
+
+### 🎨 "Static Feel" — 20 Titik yang Membuat Web Terasa Mati
+
+| # | Area | Masalah | Solusi |
+|---|---|---|---|
+| 1 | Loading | `—` polos saat fetch | **Skeleton shimmer** |
+| 2 | Numbers | Langsung muncul | **Count-up animation** |
+| 3 | Cards | Seragam semua | **Vary height + stagger** |
+| 4 | Scroll | Statis | **Reveal on scroll** (IntersectionObserver) |
+| 5 | Hover | Hanya shadow | **Micro-interactions**: lift + rotate icon |
+| 6 | Buttons | Flat | **Magnetic hover** untuk CTA utama |
+| 7 | SOS | Pulse simple | **Ripple + shadow breathing** |
+| 8 | Toast | Slide-in polos | **Slide + spring + haptic vibrate** |
+| 9 | Map markers | Circle statis | **Pulse danger, bob safe** |
+| 10 | Chart | Line polos | **Gradient fill + animated draw** |
+| 11 | Slideshow | Fade only | **Ken Burns + parallax** |
+| 12 | Section switch | Instant | **Crossfade 300ms** |
+| 13 | Error state | Toast biasa | **Shake + red glow** |
+| 14 | Success | Toast biasa | **Confetti kecil (canvas, 3KB)** |
+| 15 | Fish table | Plain rows | **Hover zoom + row reveal** |
+| 16 | Weather icons | Emoji statis | **Animated SVG (sun rotate, cloud drift)** |
+| 17 | Progress | Tidak ada | **Top progress bar** untuk semua fetch |
+| 18 | Empty states | Text kosong | **Illustration + CTA** |
+| 19 | Form validation | Toast | **Inline shake + red border + helper text** |
+| 20 | Nav active | Background change | **Sliding underline** |
+
+### 🎭 "AI-Look" — 15 Ciri yang Harus Dihindari
+
+| Ciri AI-look | Pengganti yang lebih "manusia" |
+|---|---|
+| Gradient biru→ungu di hero | Palette kelautan: teak `#8B6F47`, deep sea `#0F2027`, coconut `#F5F1E8`, coral `#E86A5F` |
+| Glassmorphism di semua card | Blur hanya untuk overlay/peta panel |
+| Border-radius 12px seragam | Mix 4/8/16/24px berdasarkan hierarchy |
+| Drop shadow `0 10px 30px rgba(6,30,54,.06)` di semua | Shadow hanya untuk elevation penting |
+| Emoji sebagai ikon produk | SVG line icons custom (stroke 1.5px) |
+| "Welcome to X" heading | Bahasa natural: "Selamat datang, Nelayan!" |
+| Feature grid dengan checkmark | Narrative + visual flow |
+| Blue gradient buttons di mana-mana | Solid dengan accent tunggal |
+| Avatar orang profesional | Foto nelayan asli Indonesia (Wikimedia) |
+| "Get Started" CTA | "Mulai Melaut dengan Aman" |
+| Inter/Roboto typography flat | Pasangan: **Manrope** (heading) + **Inter** (body) |
+| Stock photo Unsplash generik | Foto nelayan dari Wikimedia Commons |
+| Feature icons emoji | Ikon SVG maritim |
+| Card grid 3×2 simetris | Asymmetric: 60/40 split |
+| Overlay blur 8px di intro | Overlay dengan gambar nelayan + teks bold |
+
+---
+
+# 📋 PROMPT LENGKAP UNTUK GOOGLE AI STUDIO
+
+Copy **seluruh blok** di bawah ini. Prompt sudah self-contained, tidak akan bertanya balik.
+
+````markdown
+# ROLE
+Kamu adalah principal frontend engineer + product designer berpengalaman 15 tahun. Spesialisasi: (a) aplikasi web performa tinggi untuk device low-end, (b) design system yang tidak terasa "AI-generated", (c) micro-interactions yang meningkatkan conversion & delight, (d) aplikasi offline-first untuk daerah 3G. Tugasmu: **regenerate total** aplikasi **GISFishIt v3** dari nol dengan semua perbaikan di bawah. Jangan bertanya balik — ambil keputusan paling masuk akal dan lanjutkan.
+
+---
+
+# PROJECT BRIEF
+GISFishIt = web app untuk nelayan Indonesia. Fitur utama: peta zona tangkap aman, cuaca laut real-time, info ikan, alat keselamatan (SOS, GPS, catch log), laporan komunitas, edukasi keberlanjutan. Target user: nelayan tradisional 25-60 tahun, HP RAM 2GB, 3G tidak stabil, banyak offline di laut.
+
+Dibuat oleh 4 mahasiswa Sistem Informasi Kelautan UPI Serang: Ardian Rifqi (Lead Dev), Ahmad Rafael (Data & Marine Ecology), Mega Aulia (Community), Diana Sadira (UI/UX).
+
+---
+
+# HARD CONSTRAINTS
+1. **Bundle ≤ 450KB gzipped total** (turun dari 500KB — hapus bloat).
+2. **Runs smooth on 2GB RAM**: max 100 marker aktif, MarkerCluster, `preferCanvas: true`, no framework.
+3. **No frameworks**: Vanilla HTML+CSS+JS only. No React/Vue/Svelte/Rust WASM/Leptos. No bundler runtime.
+4. **Offline-first**: Workbox precache app shell, NetworkFirst untuk API.
+5. **Data resmi ≠ simulasi**: KKP/BIG asli = biru. Simulasi edukasi = hijau/kuning/merah, WAJIB label "(SIMULASI)".
+6. **Disclaimer visible** di atas peta + setiap popup zona simulasi.
+7. **No fake data**: kalau API gagal & cache kosong, tampilkan skeleton atau `—`. Never randomize.
+8. **No AI-look**: ikuti Design System di bawah secara ketat.
+9. **All-device**: tested at 320px (iPhone SE), 768px (iPad), 1440px (desktop), 1920px+.
+10. **Accessibility AA**: contrast ≥4.5:1, hit target ≥44px, alt di semua gambar, aria-label di icon-only button.
+
+---
+
+# DESIGN SYSTEM (WAJIB — INI YANG BIKIN TIDAK "AI-LOOK")
+
+## Palette — Indonesian Maritime
+```
+--sand:        #F5F1E8   /* background utama, bukan putih */
+--sand-deep:   #E8E0D0   /* card secondary */
+--teak:        #8B6F47   /* accent coklat kayu perahu */
+--teak-dark:   #6B5436   /* hover */
+--deep-sea:    #0F2027   /* text utama */
+--sea-mid:     #1B4B5A   /* heading secondary */
+--sea-light:   #2C7A8C   /* link, accent UI */
+--coral:       #E86A5F   /* CTA danger, SOS */
+--coral-dark:  #C94A3F
+--moss:        #4A7C59   /* success, safe zone */
+--moss-dark:   #2F5A3D
+--wheat:       #D4A574   /* warning, caution zone */
+--wheat-dark:  #B08850
+--driftwood:   #6B6B5E   /* muted text */
+--foam:        #FAFAF5   /* card background (warm white, bukan pure) */
+--night:       #0A1820   /* dark mode background */
+--night-soft:  #152730   /* dark mode card */
+```
+**JANGAN pakai gradient biru-ke-ungu. JANGAN pakai accent `#1572e8` atau `#0b66b3`. Palette di atas adalah identitas baru.**
+
+## Typography
+```
+Heading:   'Manrope', weights 600, 700, 800
+Body:      'Inter', weights 400, 500, 600
+Mono:      'JetBrains Mono', weight 500 (hanya untuk koordinat/suhu)
+```
+
+- **Hero h1**: `clamp(2rem, 5vw, 3.5rem)`, weight 800, letter-spacing -0.03em, line-height 1.1
+- **Section h2**: `clamp(1.5rem, 3vw, 2rem)`, weight 700, letter-spacing -0.02em
+- **Body**: 15px base, line-height 1.65
+- **Labels**: 13px, weight 500, uppercase letter-spacing 0.05em
+- **Numerals dalam data**: tabular-nums aktif
+
+## Spacing Scale (4px base)
+`--space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;`
+
+## Border Radius (VARIED — bukan seragam)
+- Button kecil: 6px
+- Button besar: 10px
+- Card: 16px
+- Hero panel: 24px
+- Avatar: 50%
+- Map container: 16px
+
+## Shadow (MINIMAL — hanya untuk elevation penting)
+- Elevation 1 (card): `0 1px 3px rgba(15,32,39,.08), 0 1px 2px rgba(15,32,39,.04)`
+- Elevation 2 (floating panel): `0 4px 12px rgba(15,32,39,.10), 0 2px 4px rgba(15,32,39,.06)`
+- Elevation 3 (modal): `0 16px 40px rgba(15,32,39,.16)`
+- **JANGAN** pakai `0 10px 30px` seragam di semua card.
+
+## Textures & Details
+- **Grain overlay**: pseudo-element dengan SVG noise, opacity 0.015, di body
+- **Subtle grid**: SVG pattern di hero, opacity 0.02
+- **Hand-drawn divider**: SVG path organik 3px stroke teak, di antara section
+- **Icons**: custom SVG line-art, stroke 1.5px, 24×24px (bukan emoji). Buat 20 ikon: anchor, compass, wave, wind, sun, moon, fish, ship, map-pin, alert-triangle, sos, gps, heart, bookmark, share, settings, close, menu, chevron, check.
+
+## Layout Principles (BUKAN card-grid seragam)
+- **Hero asymmetric**: 60/40 split di desktop, stack di mobile. Hero text kiri, gambar nelayan kanan (Wikimedia Commons, bukan Unsplash).
+- **Feature sections**: alternating left-right layout, bukan grid 3×2.
+- **Cards vary by importance**: primary card 2× tinggi secondary card.
+- **Whitespace generous**: section padding `--space-8` (64px) di desktop, `--space-6` (32px) di mobile.
+- **Max content width**: 1200px, tapi prose max 680px.
+
+## Dark Mode
+- Background `--night`, text `#E8E0D0`
+- Accent sama, tapi `--sea-light` jadi `#5BB8CC` (lebih terang)
+- Shadow diganti subtle inner border `1px solid rgba(255,255,255,.06)`
+
+---
+
+# ANIMATION SYSTEM (CSS-ONLY, NO LIBRARY)
+
+Total animasi code ≤ 8KB gzipped. Semua pakai CSS transitions/keyframes + `IntersectionObserver` + Web Animations API (native).
+
+## Easing
+```
+--ease-out:    cubic-bezier(0.16, 1, 0.3, 1);      /* smooth exit */
+--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* bouncy */
+--ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);       /* standard */
+```
+
+## Durations
+```
+--dur-fast:    150ms    /* hover, tap */
+--dur-med:     300ms    /* transitions */
+--dur-slow:    500ms    /* reveal */
+--dur-hero:    800ms    /* page load */
+```
+
+## Wajib Implementasi (20 animasi)
+
+1. **Page load**: Hero text fade-up stagger (0/100/200/300ms delay), logo scale-in spring.
+2. **Scroll reveal**: Setiap section pakai `IntersectionObserver` → tambah class `.revealed` → fade + translateY(24px→0). Trigger threshold 0.15.
+3. **Card hover**: `translateY(-4px)` + shadow elevation 1→2 + icon `rotate(-8deg) scale(1.1)`.
+4. **Button magnetic**: Mouse move di button → ikuti cursor 8px (transform). Reset on mouseleave. Skip di mobile.
+5. **SOS button**: Base 68px + pulse ring (2 stacked `::before`/`::after` scale 1→2.2, opacity 0.6→0, 2.5s infinite). Hover: scale 1.06. Click: shake 400ms.
+6. **Skeleton shimmer**: Linear gradient 90deg `#E8E0D0 25%, #F5F1E8 50%, #E8E0D0 75%` background-size 200% → animate `background-position` 0%→200% 1.4s infinite.
+7. **Count-up numbers**: Weather temp, wave height, wind speed animate 0→target over 800ms pakai `requestAnimationFrame`. Easing out.
+8. **Toast slide-spring**: `translateX(400px) → 0` pakai `--ease-spring`, plus `navigator.vibrate([10])` on mobile.
+9. **Map marker pulse (danger zone)**: `box-shadow: 0 0 0 0 rgba(232,106,95,0.7)` → `0 0 0 16px rgba(232,106,95,0)` 2s infinite.
+10. **Map marker bob (safe zone)**: `translateY(0) → translateY(-3px) → 0` 3s infinite.
+11. **Chart draw**: Chart.js `animation: { duration: 800, easing: 'easeOutQuart' }` — bukan disable.
+12. **Slideshow Ken Burns**: Setiap slide scale 1→1.08 over 8s saat active.
+13. **Section crossfade**: `opacity 0→1` + `translateY(12px→0)` 300ms.
+14. **Error shake**: Input invalid → `translateX(-8px, 8px, -6px, 6px, 0)` 400ms.
+15. **Success confetti**: Canvas 200×200, 20 particles warna palette, fall 1.2s, triggered via `celebrate()` helper. Total ~2KB.
+16. **Animated weather SVG**: Sun rotate slow (60s), cloud drift horizontal (30s), wave bounce (4s). Inline SVG dengan CSS animation.
+17. **Top progress bar**: Div fixed top height 2px, gradient teak→coral, width scale via `transform: scaleX(0→1)` 400ms saat fetch dimulai/selesai.
+18. **Nav underline slide**: `<span class="nav-indicator">` absolut, animasi `left` & `width` ke posisi aktif via JS `getBoundingClientRect`.
+19. **Empty state illustration**: SVG animasi ringan (fish bob up-down, 3s infinite), bukan teks doang.
+20. **Form inline validation**: Field invalid → border coral + shake + muncul helper text slide-down (max-height 0→24px + opacity 0→1).
+
+## Reduced Motion
+Semua animasi WAJIB dibungkus `@media (prefers-reduced-motion: no-preference)`. Kalau `reduce`, disable semua kecuali opacity fade minimal 100ms.
+
+---
+
+# FITUR WAJIB DIPERBAIKI (28 bug)
+
+Kamu WAJIB fix semua bug ini. Sertakan komentar `// FIX #N` di kode.
+
+1. **Double bind toggleRandom** → hanya bind di satu tempat.
+2. **SOS tanpa konfirmasi** → tampil modal: "SOS akan buka WhatsApp ke [kontak]. Yakin?" dengan countdown 3-2-1 + tombol Cancel besar.
+3. **SOS popup blocker** → buat `<a>` element programatik, set `href`, `.click()`, lalu remove.
+4. **SOS tanpa fallback** → deteksi `navigator.userAgent` — kalau tidak ada WhatsApp (desktop), fallback ke `sms:` lalu `tel:`.
+5. **Emergency phone hardcoded** → tambah Settings modal (gear icon header) dengan input: Emergency contacts (multi, max 3), default number, nama kapal.
+6. **initSupabase race** → semua fungsi global via `window.*`, tidak pakai module pattern yang race.
+7. **Reset Fish Positions tidak bind** → `btn-reset-fish-positions` wajib ada handler: hapus semua moving markers + reset `movingFishMarkers = []`.
+8. **applyZoneFilters hilang cluster state** → pakai `allZoneMarkers` array + manual `addLayer/removeLayer`. Jangan `clearLayers()`.
+9. **Marker klik triggers map click** → `marker.on('click', e => { L.DomEvent.stopPropagation(e); })`.
+10. **Export Favorites tidak ada favorit** → tambah fitur: klik marker → popup punya tombol "★ Simpan ke Favorit" → simpan ke localStorage `gisfishit_favorites` array of `{lat,lng,zone}`. Tombol "Export Favorites" → download JSON dari array itu. Kalau kosong, toast warning.
+11. **sw.js precache path** → gunakan `./index.html`, `./css/style.css` dst — relative.
+12. **Weather refresh saat hidden tab** → wrap `setInterval` dengan `if (document.visibilityState === 'visible')`.
+13. **Chart.js destroy error** → `try { if (weatherChartInstance) weatherChartInstance.destroy(); } catch(e){}`. Null check sebelum render.
+14. **saveCatch pakai add** → ganti ke `.put()`.
+15. **Nominatim rate limit** → debounce 500ms, cache hasil di `localStorage` key `nominatim_cache_<query>` TTL 7 hari.
+16. **Fish marker getElement null** → `marker.on('add', () => marker.getElement()?.classList.add('moving-fish-marker'))`.
+17. **Toast sebelum defined** → definisikan `showToast` di `<script>` inline di `<head>` sebelum semua JS lain.
+18. **i18n before DOM** → `applyI18n()` hanya dipanggil di `DOMContentLoaded` dan saat change event.
+19. **lastWeatherData stale** → validasi `Date.now() - fetchedAt < 3600000` (1 jam). Kalau expired, treat as null.
+20. **Map invalidateSize hanya map tab** → tambah `ResizeObserver` di `#map-wrapper` → `map.invalidateSize()`.
+21. **Language & theme tidak persist** → `localStorage.getItem('gisfishit_lang')` saat init, `setItem` saat change.
+22. **Breadcrumb tak bisa di-clear** → tombol "Clear Track" di fish controls → hapus IndexedDB `breadcrumbs` store.
+23. **assessSafety hardcoded** → konstanta `SAFETY_THRESHOLDS = { danger: {wave:2.5, wind:25}, caution: {wave:1.5, wind:15} }` di config.js.
+24. **Feedback spam** → dedupe by phone+message, limit array 50 entries (shift oldest).
+25. **Import JSON malformed** → `try-catch` + validasi `typeof data === 'object'` + validasi field.
+26. **Duplicate .legend CSS** → hapus blok kedua.
+27. **Hapus #map-section-card CSS** → tidak ada di HTML.
+28. **Visibility check untuk auto-refresh** → semua `setInterval` cek `document.visibilityState`.
+
+---
+
+# FITUR BARU / SELESAIKAN (16)
+
+## A. Settings Modal (BARU)
+- Trigger: gear icon di header.
+- Sections:
+  - **Emergency Contacts**: input nama + nomor WhatsApp (max 3). Radio pilih primary. Default #1 dipakai SOS.
+  - **Kapal**: nama kapal, ukuran (m), kapasitas (orang), konsumsi BBM (L/jam) — disimpan lokal, dipakai untuk estimasi rute.
+  - **Notifikasi**: toggle "Aktifkan peringatan cuaca ekstrem" (Web Push permission).
+  - **Data**: tombol "Hapus Semua Data Lokal" (double confirm).
+- Simpan ke localStorage `gisfishit_settings` (JSON).
+- Modal pakai `<dialog>` element native (browser support 96%).
+
+## B. Offline Indicator (BARU)
+- Top bar tipis (height 28px) fixed di bawah header saat offline.
+- Teks: "📡 Mode Offline — Data terakhir: [waktu]" dengan animasi slide-down.
+- Hilang otomatis saat online.
+- Listen `online`/`offline` events.
+
+## C. Fish Detail Modal (BARU)
+- Klik row di tabel Fish Info → modal dengan:
+  - Ilustrasi SVG ikan (bikin 5 generic: tuna, reef fish, catfish, crustacean, mollusk — pakai sebagai fallback).
+  - Nama, deskripsi lengkap, harga, habitat, musim.
+  - Tombol "Lihat di Peta" → filter peta untuk zona habitat (jika ada data).
+  - Tombol "Cari di Catch Log" → filter catatan tangkapan.
+
+## D. Catch Log Viewer (BARU)
+- Tombol "Lihat Catch Log" di footer Manage.
+- Modal dengan:
+  - Timeline list (date → fish → weight → location).
+  - Filter: spesies, tanggal.
+  - Map mini preview di kanan (jika ada location).
+  - Tombol "Export CSV" (existing).
+  - Tombol "Hapus Semua" (double confirm).
+  - Stats ringkas: "Total X tangkapan • Y kg • Z spesies".
+
+## E. Breadcrumb Viewer (BARU)
+- Tombol "Lihat Jejak Perjalanan" di fish controls.
+- Modal dengan:
+  - Peta Leaflet mini menampilkan breadcrumb layer + current pos.
+  - Info: total jarak, durasi, titik awal/akhir.
+  - Tombol "Export GPX" (standard GPS format, bisa dibuka Google Earth).
+  - Tombol "Hapus Jejak" (double confirm).
+
+## F. Weather Widget di Home (BARU)
+- Card kecil di hero section (kanan bawah hero text):
+  - Posisi user saat ini (GPS atau default Jakarta).
+  - Icon cuaca animasi SVG.
+  - Suhu udara besar (count-up animation).
+  - Status safety badge.
+  - Tombol "Detail →" ke tab Weather.
+- Fetch pada load + refresh tiap 10 menit.
+
+## G. Sunrise/Sunset (BARU — dari Open-Meteo)
+- Endpoint sudah include di `daily=sunrise,sunset`.
+- Tambah ke `weather.js`: `fetch(`${weatherUrl}&daily=sunrise,sunset&timezone=auto``.
+- Tampilkan di Marine Conditions card: "🌅 Sunrise: 05:42 • 🌇 Sunset: 18:15".
+
+## H. Moon Phase (BARU — hitung lokal)
+- Fungsi `getMoonPhase(date)` — hitung dari Julian day, return `{ phase: 'Waxing Crescent', icon: '🌒', illumination: 0.15 }`.
+- Pakai SVG moon icon (bukan emoji), 8 varian.
+- Tampil di Marine Conditions.
+
+## I. Search Autocomplete (BARU)
+- Input search → debounce 500ms → fetch Nominatim `&limit=5` → dropdown suggestion list.
+- Keyboard: ↑↓ navigasi, Enter pilih, Esc tutup.
+- Cache hasil query.
+- ARIA combobox role.
+
+## J. Multi-language (RESTORE + FIX)
+- 6 bahasa: **en, id, fr, jp, es, ar** — WAJIB lengkap semua key, bukan kosong.
+- Untuk bahasa yang belum diterjemahkan sempurna, gunakan EN sebagai base dan terjemahkan label UI utama saja (minimal 30 key penting per bahasa non-EN/ID).
+- Arabic: `dir="rtl"` di `<html>` saat dipilih. Mirror layout.
+- Persist di localStorage.
+- Tambah flag emoji kecil di dropdown option: 🇬🇧 English / 🇮🇩 Indonesia / 🇫🇷 Français / 🇯🇵 日本語 / 🇪🇸 Español / 🇸🇦 العربية.
+
+## K. Push Notifications Cuaca (BARU)
+- Tombol "Aktifkan Notifikasi Cuaca" di Settings.
+- Request `Notification.requestPermission()`.
+- Kalau granted, register Push subscription (butuh backend — placeholder: simpan permission state saja).
+- Untuk simulasi lengkap tanpa backend: saat weather berubah ke `danger`, tampilkan `new Notification('⚠️ Cuaca Berbahaya', { body: '...' })` jika permission granted.
+- Service worker handle `notificationclick` → open app.
+
+## L. Onboarding Tour (BARU)
+- Muncul saat first visit (localStorage `gisfishit_tour_done`).
+- 5 step highlight: nav, SOS, filter, forecast, settings.
+- Pakai `<dialog>` + absolute positioned tooltip + darkened backdrop with cutout (pakai `box-shadow: 0 0 0 9999px rgba(0,0,0,.6)` di target + `position: fixed`).
+- Tombol Next/Skip.
+- Setelah selesai, `localStorage.setItem('gisfishit_tour_done', '1')`.
+
+## M. Route Planning (SEDERHANA — garis lurus)
+- Mode di peta: klik kanan marker zona → "Rencanakan Rute dari Posisi Saya".
+- Hitung haversine distance + bearing.
+- Gambar polyline putus-putus dari posisi user ke zona.
+- Info card:
+  - Jarak (km)
+  - Bearing (derajat + cardinal)
+  - Estimasi waktu (berdasarkan kecepatan kapal 10 km/jam default, bisa diubah di Settings)
+  - Estimasi BBM (konsumsi kapal × waktu)
+- Tidak pakai API routing laut (belum ada yang gratis). Disclaimer: "Rute garis lurus — hindari daratan & karang manual."
+
+## N. Distance dari User (BARU)
+- Di setiap popup zona, tampilkan jarak dari posisi user (jika GPS aktif): "📍 12.4 km dari posisi Anda".
+- Haversine formula.
+
+## O. Bottom Navigation di Mobile (BARU)
+- Di layar ≤768px, ganti nav horizontal atas dengan **bottom nav** sticky:
+  - 5 icon: Home, Map, Weather, Fish, More
+  - Icon SVG line-art.
+  - Active state: icon → filled + label bold + indikator underline coral.
+  - Safe area iOS: `padding-bottom: env(safe-area-inset-bottom)`.
+  - Tinggi 64px + safe area.
+
+## P. Auto Dark Mode (BARU)
+- Deteksi `new Date().getHours()` — jika 18:00-05:59, default dark mode (bisa override user).
+- Setting di Settings: "Auto dark mode (ikut waktu)" toggle.
+
+---
+
+# PENGHAPUSAN (Clean up — jangan diikutkan)
+
+Hapus dari v2:
+1. `randomizeInterval` — auto-regen 30 detik (bikin peta merasa buggy). Hapus fitur "Toggle Random" auto. Ganti dengan tombol "Generate New Zones" manual saja.
+2. CSS `.legend` duplikat (ada 2 blok identik) — sisakan satu.
+3. CSS `#map-section-card` — ID tidak ada di HTML.
+4. 6 bahasa tanpa terjemahan (fr/jp/es/ar kosong) — GANTI dengan 6 bahasa lengkap minimal 30 key.
+5. Emoji sebagai ikon produk di header/nav — ganti SVG.
+6. `.moving-fish-marker` pulse 2s infinite — ganti dengan bob 3s yang lebih halus.
+7. Chart.js 3 datasets (temperatur+windspeed+wave) — kurangi jadi 2: gelombang & angin saja (temperatur laut di tooltip).
+8. `generateForecast()` lama (random) — sudah diganti real API.
+9. `checkWeatherAlerts()` lama — redundan.
+10. `console.warn` production — buat `logger.warn()` yang bisa dimatikan via `window.DEBUG`.
+11. `#intro-screen` full-page overlay dengan button "Get Started" — GANTI dengan hero section tanpa overlay. User langsung lihat app.
+12. Glassmorphism seragam di semua card — pakai solid card dengan subtle border.
+13. `bg-slideshow` 4 gambar Unsplash — GANTI dengan 1 hero image di section Home saja (foto nelayan Wikimedia), bukan background global.
+14. `alert()` dan `confirm()` native — ganti dengan modal custom.
+15. `prompt()` native untuk report mode — ganti dengan form modal.
+
+---
+
+# STRUKTUR FILE BARU
+
+```
+/
+├── index.html
+├── manifest.json
+├── sw.js
+├── README.md
+├── css/
+│   ├── style.css            (variables, base, layout, components)
+│   ├── animations.css       (semua keyframes + transitions)
+│   └── print.css            (opsional, untuk export PDF)
+├── js/
+│   ├── boot.js              (setup awal, showToast inline)
+│   ├── config.js
+│   ├── data.js
+│   ├── i18n.js
+│   ├── storage.js           (localStorage + IndexedDB wrapper)
+│   ├── weather.js
+│   ├── safety.js
+│   ├── community.js
+│   ├── settings.js          (modal settings)
+│   ├── modal.js             (modal generic: fish, catch log, breadcrumb, onboarding)
+│   ├── map.js
+│   ├── ui.js                (animasi: reveal, count-up, confetti, magnetic, progress bar)
+│   └── app.js               (orchestrator)
+├── data/
+│   └── kkp-zones.geojson    (user-provided)
+└── icons/
+    ├── icon-192.png
+    └── icon-512.png
+```
+
+---
+
+# DETAIL UI PER SECTION
+
+## Hero (Home)
+- Full-width section, background `--sand` dengan pattern grid SVG halus.
+- Layout asymmetric 60/40:
+  - Kiri: 
+    - Eyebrow kecil "Untuk Nelayan Indonesia" (uppercase, letter-spacing 0.1em, teak)
+    - H1 besar "Melaut dengan Aman, Menangkap dengan Bijak" (clamp 2rem-3.5rem)
+    - Paragraf 2 kalimat (Inter, 1.65 line-height)
+    - 2 CTA: primary "Mulai Jelajahi Peta" (teak), secondary "Pelajari Fitur" (ghost, scroll ke feature)
+    - Stats row: "64 Zona Aktif • 40 Spesies Ikan • 6 Bahasa" (count-up animation)
+  - Kanan:
+    - Foto nelayan dari Wikimedia (bukan Unsplash), object-fit cover, border-radius 24px, rotasi -2deg subtle
+    - Weather widget mini (absolute bottom-right, offset 16px)
+- Background grain subtle.
+
+## Features Section
+- Alternating layout: section 1 (text kiri, illustration kanan), section 2 (illustration kiri, text kanan).
+- Bukan grid 3×2.
+- Setiap fitur punya:
+  - Icon SVG 64×64 (line-art, teak)
+  - H3 besar
+  - Paragraf 2-3 kalimat
+  - Link "Pelajari lebih →" (underline animated)
+- Section divider: SVG hand-drawn wave.
+
+## Map Section
+- Toolbar minimal: search bar (full-width di mobile, 400px di desktop) + 3 icon button (filter, layers, settings).
+- Filter panel jadi **bottom sheet** di mobile (slide-up), bukan floating card.
+- Legend jadi **collapsible chip** di mobile (pojok kanan bawah).
+- Forecast panel jadi **bottom drawer** di mobile (bisa swipe up).
+- SOS button **fixed bottom-center** di mobile (bukan bottom-left), diameter 72px.
+- Disclaimer banner kuning tipis di bawah toolbar, bukan di atas peta — pakai chip kecil "⚠️ Data Simulasi" yang klik untuk expand.
+
+## Weather Section
+- Header dengan location picker (input + autocomplete).
+- Big current card: gradient warm sand (bukan biru), SVG icon besar animasi.
+- Grid 2-col di desktop: forecast 5 hari (kiri) + marine details (kanan).
+- Chart di bawah, background foam.
+- Alert muncul sebagai banner di atas, dengan shake animation.
+
+## Fish Info Section
+- Filter row: chip "Semua / Air Asin / Air Tawar" + search input + sort dropdown.
+- Card grid responsive 1/2/3 col dengan hover lift.
+- Setiap card: SVG ikan ilustrasi (5 generic), nama, harga, musim badge.
+- Klik card → modal detail.
+
+## About Section
+- Timeline style untuk Cerita Kami (bukan paragraf wall-of-text).
+- Team grid 4 card, ukuran avatar 120px bulat, social links SVG.
+- Value section: 3 kolom dengan icon besar.
+
+---
+
+# PERFORMANCE BUDGET (WAJIB VERIFIKASI)
+
+Tulis di README bagian akhir, estimasi ukuran tiap file:
+
+| File | Max gzipped |
+|---|---|
+| index.html | 15KB |
+| css/style.css | 18KB |
+| css/animations.css | 8KB |
+| js/boot.js | 2KB |
+| js/config.js | 3KB |
+| js/data.js | 8KB |
+| js/i18n.js | 12KB (6 bahasa) |
+| js/storage.js | 3KB |
+| js/weather.js | 6KB |
+| js/safety.js | 5KB |
+| js/community.js | 4KB |
+| js/settings.js | 5KB |
+| js/modal.js | 8KB |
+| js/map.js | 12KB |
+| js/ui.js | 6KB |
+| js/app.js | 8KB |
+| sw.js | 3KB |
+| **Total app shell** | **~126KB** |
+| + Leaflet CDN | 42KB |
+| + MarkerCluster CDN | 8KB |
+| + Chart.js lazy | 60KB |
+| **Total** | **~236KB** ✅ jauh di bawah 450KB |
+
+---
+
+# ACCEPTANCE CRITERIA (60 POIN)
+
+Aplikasi dinyatakan lulus jika **semua** poin ini terpenuhi. Verifikasi manual.
+
+**Design (10 poin)**
+1. Palette mengikuti Design System (no gradient biru-ungu).
+2. Typography Manrope + Inter (bukan Roboto).
+3. Border radius varied (bukan 12px seragam).
+4. Shadow minimal & varied by elevation.
+5. Hero asymmetric 60/40 (bukan centered).
+6. Tidak ada emoji di header/nav/feature icon (SVG only).
+7. Grain texture halus terlihat di zoom 200%.
+8. Dark mode lengkap (semua section).
+9. Tidak ada card yang identik tinggi (varied).
+10. Contrast semua text ≥4.5:1.
+
+**Animasi (10 poin)**
+11. Hero text fade-up stagger saat load.
+12. Setiap section reveal on scroll.
+13. Card hover lift + icon rotate.
+14. SOS pulse ring.
+15. Skeleton shimmer saat fetch weather.
+16. Count-up animation untuk suhu & stats.
+17. Toast slide-spring + vibrate.
+18. Chart draw animation (bukan disabled).
+19. Ken Burns pada hero image.
+20. Section crossfade smooth 300ms.
+
+**Fitur (15 poin)**
+21. Tombol Reset Fish Positions berfungsi (hapus semua marker).
+22. Tombol Export Favorites hanya export yang sudah di-favorit (★ per marker).
+23. Settings modal berisi Emergency Contacts + Kapal + Notifikasi.
+24. Offline indicator muncul saat offline.
+25. Fish detail modal dengan SVG ilustrasi.
+26. Catch Log viewer timeline dengan stats + filter.
+27. Breadcrumb viewer dengan peta + export GPX.
+28. Weather widget mini di Home.
+29. Sunrise/sunset tampil di Marine Conditions.
+30. Moon phase tampil dengan SVG icon.
+31. Search autocomplete Nominatim (5 saran).
+32. Multi-bahasa 6 bahasa lengkap.
+33. Auto dark mode 18:00-06:00 (bisa dimatikan).
+34. Route planning garis lurus dengan info jarak/waktu/BBM.
+35. Distance dari user di popup zona.
+
+**Bug Fix (10 poin)**
+36. Toggle Random hanya trigger sekali per klik.
+37. SOS pakai konfirmasi modal (bukan langsung buka WA).
+38. Emergency phone bisa diganti via Settings.
+39. Reset fish positions ter-bind.
+40. Zone filter tidak kehilangan cluster state.
+41. Marker klik tidak trigger map click.
+42. sw.js precache relative path.
+43. Weather refresh tidak jalan saat tab hidden.
+44. Language & theme persist across reload.
+45. Breadcrumb bisa di-clear.
+
+**Performance & Responsive (10 poin)**
+46. Bundle ≤450KB gzipped (verifikasi dengan `bundlephobia` atau similar).
+47. Lighthouse Performance ≥85 di mobile.
+48. Lighthouse Accessibility ≥90.
+49. Lighthouse PWA ≥90.
+50. Test di 320px (iPhone SE) — tidak ada horizontal scroll.
+51. Test di 768px (iPad) — grid berubah 2 col.
+52. Test di 1440px — layout asymmetric.
+53. Touch target semua ≥44×44px.
+54. Bottom nav muncul di ≤768px.
+55. `prefers-reduced-motion` men-disable animasi.
+
+**Behavior & Edge Cases (5 poin)**
+56. Offline → reload → app tetap jalan dari cache.
+57. Cuaca API down → skeleton hilang, tampil `—` dengan toast warning.
+58. Nominatim down → search tetap bisa untuk koordinat langsung.
+59. Supabase belum setup → app tidak crash, silent skip.
+60. KKP geojson 404 → app jalan dengan zona simulasi + toast warning.
+
+---
+
+# OUTPUT FORMAT
+
+Keluarkan **satu blok kode per file** (16 file + README):
+
+````
+### FILE: path/to/file.ext
+```language
+<isi lengkap, no placeholder, no "// ..."}
+```
+````
+
+Urutan:
+1. README.md
+2. manifest.json
+3. sw.js
+4. index.html
+5. css/style.css
+6. css/animations.css
+7. js/boot.js
+8. js/config.js
+9. js/data.js
+10. js/i18n.js
+11. js/storage.js
+12. js/weather.js
+13. js/safety.js
+14. js/community.js
+15. js/settings.js
+16. js/modal.js
+17. js/map.js
+18. js/ui.js
+19. js/app.js
+
+Setelah semua file:
+- **SETUP STEPS** (8 langkah)
+- **BUNDLE SIZE TABLE** (estimasi + total)
+- **ACCEPTANCE CHECKLIST** (60 poin di atas, dengan checkbox `[ ]`)
+- **CHANGELOG vs v2** (tabel: Fitur | v2 | v3)
+
+---
+
+# FINAL RULES
+
+- ❌ Jangan bertanya balik.
+- ❌ Jangan pakai placeholder `// ...` atau `/* lanjutan */`.
+- ❌ Jangan pakai React/Vue/Svelte/Leptos/Dioxus/Rust WASM.
+- ❌ Jangan pakai GSAP/Framer Motion (pakai CSS only).
+- ❌ Jangan pakai gradient biru-ungu.
+- ❌ Jangan pakai emoji di ikon produk.
+- ❌ Jangan pakai `alert()`/`confirm()`/`prompt()` native (pakai modal custom).
+- ❌ Jangan pakai `console.warn` tanpa guard debug.
+- ❌ Jangan pakai font Roboto (pakai Manrope + Inter).
+- ✅ Semua fungsi harus lengkap dan bisa dijalankan.
+- ✅ Semua animasi CSS-only + IntersectionObserver.
+- ✅ Semua fetch harus punya error handling + loading state.
+- ✅ Semua modal pakai `<dialog>` element native.
+- ✅ Semua gambar punya `alt` (foto dari Wikimedia Commons domain publik).
+- ✅ Semua tombol icon-only punya `aria-label`.
+- ✅ Semua toast trigger haptic vibrate di mobile.
+
+Jika output tidak muat dalam satu respons, bagi menjadi 4 pesan:
+- Pesan 1: README + manifest + sw.js + index.html + 2 CSS
+- Pesan 2: boot + config + data + i18n + storage
+- Pesan 3: weather + safety + community + settings + modal
+- Pesan 4: map + ui + app + SETUP + BUNDLE + CHECKLIST + CHANGELOG
+
+Tunggu saya ketik "LANJUT" sebelum lanjut ke pesan berikutnya.
+````
+
+---
+
+## 💡 Cara Pakai Prompt Ini
+
+1. Buka [Google AI Studio](https://aistudio.google.com/)
+2. Pilih **Gemini 2.5 Pro** (model paling capable untuk output besar)
+3. Set **Temperature: 0.3** (lebih deterministik, tidak "kreatif" berlebihan)
+4. Set **Max output tokens: 65536** (maksimal)
+5. Paste prompt di atas
+6. Klik **Run**
+7. Jika terpotong, ketik "LANJUT" sesuai instruksi di akhir prompt
+
+## 🎯 Yang Dijamin oleh Prompt Ini
+
+| Jaminan | Cara prompt memaksa |
+|---|---|
+| Tidak terlihat AI | 15 ciri AI-look eksplisit dilarang + palette Indonesia maritime |
+| Banyak animasi | 20 animasi WAJIB + CSS-only constraint |
+| Tidak static | Skeleton, count-up, reveal, confetti, Ken Burns semua di-spec |
+| Semua device | Breakpoint 320/768/1440 eksplisit + bottom nav mobile |
+| Tidak ada bug | 28 bug numbered dengan `// FIX #N` comment |
+| Fitur lengkap | 16 fitur baru dengan spec detail |
+| Ukuran kecil | Budget per file ≤126KB total app shell |
+| Siap deploy | Path relative, CDN, GitHub Pages ready |
+
+**Tips tambahan**: setelah dapat output, **jalankan Lighthouse audit** dan **test di Chrome DevTools device emulation** (iPhone SE 320px, Galaxy S8, iPad). Kalau ada yang gagal acceptance criteria, kirim balik ke AI dengan: *"Poin #X gagal: [detail]. Perbaiki tanpa mengubah bagian lain."*

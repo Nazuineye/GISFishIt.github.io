@@ -1,0 +1,15 @@
+{
+  "name": "gisfishit",
+  "version": "1.0.0",
+  "description": "Web Helper to assist fishermen in catching fish and preserving the sea",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo \"Static site build complete\"",
+    "lint": "node --check server.js && node --check sw.js && for f in js/*.js; do node --check \"$f\" || exit 1; done"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

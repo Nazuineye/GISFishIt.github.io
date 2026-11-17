@@ -1,16 +1,40 @@
 {
-  "name": "GISFishIt — Fishing Zones & Safety",
+  "name": "GISFishIt — Global Fishing Zones & Safety",
   "short_name": "GISFishIt",
   "description": "Zona tangkap aman, cuaca laut real-time, dan alat keselamatan untuk nelayan Indonesia",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#041026",
-  "theme_color": "#0b66b3",
+  "background_color": "#F5F1E8",
+  "theme_color": "#0F2027",
   "lang": "id",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Peta Zona Tangkap",
+      "short_name": "Map",
+      "description": "Buka peta zona tangkap dan prakiraan laut",
+      "url": "./index.html?tab=mapSection"
+    },
+    {
+      "name": "Perkiraan Cuaca Laut",
+      "short_name": "Weather",
+      "description": "Cek cuaca laut dan tinggi gelombang real-time",
+      "url": "./index.html?tab=weatherSection"
+    }
   ]
 }
